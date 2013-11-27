@@ -12,6 +12,10 @@ public class RBT<E extends Comparable<E>> {
 	private int size;
 	private List<E> list;
 	
+	public RBT(){
+		size = 0;
+	}
+	
 	/**
 	 * This method process a binary search until it reaches external node
 	 * this node then
@@ -22,52 +26,166 @@ public class RBT<E extends Comparable<E>> {
 		//start building tree if root is empty
 		if (isEmpty()) {
 			root = new Node<E>(data, BLACK);
+			makeLeaf(root);
+			System.out.println("Added root: " + data + " " + root.color());
 		//add to pre-existing tree 
-		}else {
+		} else {
 			Node <E> node = add(root, data);
-			//two cases that need to reconstruct the tree
-			if(node.parent().isRed()){
-				//case 1: siblings are different colors
-				if (node.parent().right().color() != node.parent().left().color())
-					trinodeRestructing(node);
-				//case 2: siblings are both Red
-				else
-					recoloring(node);
+			//Reconstruct the tree
+			while ( !(node == root) && node.parent().isRed() ){
+				node = updateProperty(node);
+				if (node == root){
+					root.setColor(BLACK);
+					System.out.println("recoloring: " + root.data()+ ": "+ root.color());
+				}
 			}
+			System.out.println("Added node: " + data + " ");
 		}
 		size++;
 	}
 	
-	private void recoloring(Node<E> node) {
+	private Node<E> updateProperty(Node<E> node) {
 		// TODO Auto-generated method stub
+		Node <E> parent = node.parent();
+		// Uncle node - the other child of grand-parent
+		Node <E> uncle = node.uncle();
 		
-	}
-
-	private void trinodeRestructing(Node<E> node) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private Node<E> add(Node<E> node, E data) {
-		//base case: find the position to add
-		if(node.left() == null){
-			node.setLeft(new Node<E>(data));
-			makeLeaf(node.left());
-			return node.left();	
-		}else if(node.right() == null){
-			node.setRight(new Node<E>(data));
-			makeLeaf(node.right());
-			return node.right();
+		// Check if parent is the left node of grand-parent
+		System.out.println((parent == parent.parent().left()));
+		if ( parent == parent.parent().left())
+		{	
+			if ( uncle.isRed() ){
+				// case 1: both 3 node, parent and uncle are red ( recoloring ) 
+				node = recoloring(node);
+			} else {
+				if ( node.equals(parent.right()) ) {
+					// case 2: uncle is black, zig-zag rotation
+					System.out.println("LeftRotation: Before " + node.data() + ": " + node.color());
+					node = leftRotation(node);
+					System.out.println("LeftRotation: After " + node.data() + ": " + node.color());
+				}
+				//case 3: uncle is black, zig-zig rotation and recoloring
+				System.out.println("rightRotRecolor: Before " + node.data() + ": " + node.color());
+				node = rightRotRecolor(node);
+				System.out.println("rightRotRecolor: After " + node.data() + ": " + node.color());
+			}
+		} else { // Check if parent is the right node of grand-parent
+			if ( uncle.isRed() ){
+				// case 1: both 3 node, parent and uncle are red ( recoloring ) 
+				node = recoloring(node);
+			} else {
+				System.out.println(uncle.isRed());
+				if ( node.equals(parent.left()) ) {
+					// case 2: uncle is black, right rotation
+					System.out.println("RightRotation: Before " + node.data() + ": " + node.color());
+					node = rightRotation(node);
+					System.out.println("RightRotation: After " + node.data() + ": " + node.color());
+				}
+				//case 3: uncle is black, right rotation and recoloring
+				System.out.println("leftRotRecolor: Before " + node.data() + ": " + node.color());
+				node = leftRotRecolor(node);
+				System.out.println("leftRotRecolor: After " + node.data() + ": " + node.color());
+			}
+			
 		}
+		return node;
+	}
+	
+	private Node<E> recoloring(Node<E> node) {
+		// TODO Auto-generated method stub
+		Node <E> parent = node.parent();
+		Node <E> uncle = node.uncle();
+		parent.setColor(BLACK);
+		uncle.setColor(BLACK);
+		parent.parent().setColor(RED);
+		System.out.println("recoloring:   " + node.data() + ": " + node.color() + " " +
+				parent.data() + ": " + parent.color() + " " + 
+				uncle.data() + ": " + uncle.color() + " " + 
+				parent.parent().data() + ": " + parent.parent().color() + " ");
+		return parent.parent();
+	}
+	
+	private Node<E> leftRotation(Node<E> node) {
+		// TODO Auto-generated method stub
+		Node <E> parent = node.parent();
+		Node <E> grparent = parent.parent();
+		grparent.setLeft(node);
+		parent.setRight(node.left());
+		node.setLeft(parent);
+		return parent;
+	}
+	
+	private Node<E> rightRotation(Node<E> node) {
+		// TODO Auto-generated method stub
+		Node <E> parent = node.parent();
+		Node <E> grparent = parent.parent();
+		grparent.setRight(node);
+		parent.setLeft(node.right());
+		node.setRight(parent);
+		return parent;
+	}
+
+	private Node<E> leftRotRecolor(Node<E> node) {
+		// TODO Auto-generated method stub
+		Node <E> parent = node.parent();
+		Node <E> grparent = parent.parent();
+		parent.setRight(parent.left());
+		parent.setLeft(grparent.left());
+		grparent.setRight(node);
+		grparent.setLeft(parent);
+		
+		//Swap data between grand parent and parent
+		E temp = parent.data();
+		parent.setData(grparent.data());
+		grparent.setData(temp);
+		return node;
+	}
+	
+	private Node<E> rightRotRecolor(Node<E> node) {
+		// TODO Auto-generated method stub
+		Node <E> parent = node.parent();
+		Node <E> grparent = parent.parent();
+		parent.setLeft(parent.right());
+		parent.setRight(grparent.right());
+		grparent.setLeft(node);
+		grparent.setRight(parent);
+		
+		//Swap data between grparent and parent
+		E temp = parent.data();
+		parent.setData(grparent.data());
+		grparent.setData(temp);
+		return node;
+	}
+
+	private Node<E> add(Node<E> currentNode, E data) {
+		//base case: find the position to add
+		// Do nothing when duplicated data adding on the tree
+		if ( currentNode.data().compareTo(data) == 0 ) return currentNode;
+		
+		if( (currentNode.right().isNIL()) 
+				&& (currentNode.data().compareTo(data) < 0)){
+			// Add new node into the right of current node
+			currentNode.setRight(new Node<E>(data));
+			System.out.println("Add right before rotation: " + currentNode.right().data() + " Parent: " + currentNode.right().parent());
+			makeLeaf(currentNode.right());
+			return currentNode.right();	
+		}else if( (currentNode.left().isNIL()) 
+				&& (currentNode.data().compareTo(data) > 0)){
+			currentNode.setLeft(new Node<E>(data));
+			System.out.println("Add left before rotation: " + currentNode.left().data() + " Parent: " + currentNode.left().parent());
+			makeLeaf(currentNode.left());
+			return currentNode.left();
+		}
+		
 		//if data smaller than node.data
 		//keep traverse to the left side of the tree
-		else if(node.data().compareTo(data) > 0)	
-			node = add(node.left(), data);	
+		if(currentNode.data().compareTo(data) > 0)	
+			currentNode = add(currentNode.left(), data);	
 		//if data bigger than node.data
 		//keep traverse to the right side of the tree
 		else
-			node = add(node.right(), data);
-		return node;
+			currentNode = add(currentNode.right(), data);
+		return currentNode;
 	}
 
 	/**
@@ -123,8 +241,11 @@ public class RBT<E extends Comparable<E>> {
 	
 	private Node<E> get(Node<E> node, E data) {
 		//base case 1: find the node
-		if(node.data().compareTo(data) == 0)
+		if(node.data().compareTo(data) == 0){
+			System.out.println("Found node: " + node.data() + ": " + node.color());
+			System.out.println("Found node- parent: " + node.parent());
 			return node;
+		}
 		//base case 2: node is not in the tree
 		else if (node.left() == null || node.right() == null)
 			return null;
@@ -142,7 +263,7 @@ public class RBT<E extends Comparable<E>> {
 	 * @return True if the tree is empty, False otherwise
 	 */
 	public boolean isEmpty(){
-		return root == null;
+		return size == 0;
 	}
 	
 	/**
